@@ -1,9 +1,24 @@
+/* Responsive sizing: padding and borders stay within declared widths. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
 #root {
   min-height: 100vh;
 }
 
 .calculator {
-  width: min(100% - 32px, 420px);
+  width: min(calc(100% - 32px), 420px);
+  min-width: 0;
   margin: 60px auto;
   padding: 28px;
   border: 1px solid #dbe1e8;
@@ -28,13 +43,12 @@
   margin: 16px 0 6px;
   font-weight: 600;
   text-align: left;
-  
 }
 
 .calculator input,
 .calculator select {
-  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   padding: 11px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -65,21 +79,27 @@
   margin-top: 24px;
   font-size: 20px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .error {
   margin-top: 16px;
   color: #b91c1c;
+  overflow-wrap: anywhere;
 }
 
 nav[aria-label="Calculator modes"] {
   display: flex;
   justify-content: center;
   gap: 12px;
+  width: min(calc(100% - 32px), 420px);
+  min-width: 0;
   margin: 20px auto;
 }
 
 nav[aria-label="Calculator modes"] button {
+  flex: 1 1 0;
+  min-width: 0;
   padding: 12px 20px;
   border: 1px solid #090909;
   border-radius: 8px;
@@ -94,19 +114,9 @@ nav[aria-label="Calculator modes"] button[aria-pressed="true"] {
   color: white;
 }
 
-@media (max-width: 480px) {
-  nav[aria-label="Calculator modes"] {
-    gap: 8px;
-  }
-
-  nav[aria-label="Calculator modes"] button {
-    flex: 1;
-    padding: 10px;
-  }
-}
-
 .operation-section {
   margin: 12px 0;
+  min-width: 0;
 }
 
 .operation-label {
@@ -118,12 +128,15 @@ nav[aria-label="Calculator modes"] button[aria-pressed="true"] {
 
 .operation-buttons {
   display: grid;
-  grid-template-columns: repeat(8, 48px);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .operation-btn {
-  width: 48px;
+  width: 100%;
+  min-width: 0;
   height: 42px;
   padding: 0;
   border: 1px solid #cbd5e1;
@@ -140,15 +153,45 @@ nav[aria-label="Calculator modes"] button[aria-pressed="true"] {
 
 .operation-btn:hover {
   background: #3610dc;
+  color: #fff;
 }
 
 .operation-btn.active {
-  background:  #e2e8f0;
-  color: #fff;
+  background: #e2e8f0;
+  color: #172033;
   border-color: #2563eb;
 }
 
 .operation-btn:focus-visible {
-  outline: 2px solid  #e6e2f0;;
+  outline: 2px solid #6d4bd1;
   outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .calculator {
+    width: calc(100% - 24px);
+    margin: 24px auto;
+    padding: 16px;
+  }
+
+  nav[aria-label="Calculator modes"] {
+    width: calc(100% - 24px);
+    gap: 8px;
+  }
+
+  nav[aria-label="Calculator modes"] button {
+    padding: 10px 4px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .operation-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .operation-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
 }
