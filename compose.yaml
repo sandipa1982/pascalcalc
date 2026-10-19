@@ -1,0 +1,64 @@
+name: pascalcalc
+services:
+  arithmetic:
+    build:
+      context: ./backend
+      args:
+        SERVICE: arithmetic-api
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: '8081'
+      MAX_REQUEST_BYTES: '${MAX_REQUEST_BYTES:-4096}'
+      MAX_EXPRESSION_LENGTH: '${MAX_EXPRESSION_LENGTH:-1024}'
+      HTTP_READ_TIMEOUT: '${HTTP_READ_TIMEOUT:-5s}'
+      HTTP_WRITE_TIMEOUT: '${HTTP_WRITE_TIMEOUT:-10s}'
+      HTTP_IDLE_TIMEOUT: '${HTTP_IDLE_TIMEOUT:-60s}'
+    expose:
+      - '8081'
+    restart: unless-stopped
+
+  math:
+    build:
+      context: ./backend
+      args:
+        SERVICE: math-api
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: '8082'
+      MAX_REQUEST_BYTES: '${MAX_REQUEST_BYTES:-4096}'
+      MAX_EXPRESSION_LENGTH: '${MAX_EXPRESSION_LENGTH:-1024}'
+      HTTP_READ_TIMEOUT: '${HTTP_READ_TIMEOUT:-5s}'
+      HTTP_WRITE_TIMEOUT: '${HTTP_WRITE_TIMEOUT:-10s}'
+      HTTP_IDLE_TIMEOUT: '${HTTP_IDLE_TIMEOUT:-60s}'
+    expose:
+      - '8082'
+    restart: unless-stopped
+
+  expression:
+    build:
+      context: ./backend
+      args:
+        SERVICE: expression-api
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: '8083'
+      MAX_REQUEST_BYTES: '${MAX_REQUEST_BYTES:-4096}'
+      MAX_EXPRESSION_LENGTH: '${MAX_EXPRESSION_LENGTH:-1024}'
+      HTTP_READ_TIMEOUT: '${HTTP_READ_TIMEOUT:-5s}'
+      HTTP_WRITE_TIMEOUT: '${HTTP_WRITE_TIMEOUT:-10s}'
+      HTTP_IDLE_TIMEOUT: '${HTTP_IDLE_TIMEOUT:-60s}'
+    expose:
+      - '8083'
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '${PASCALCALC_PORT:-8088}:80'
+    depends_on:
+      - arithmetic
+      - math
+      - expression
+    restart: unless-stopped

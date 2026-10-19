@@ -1,0 +1,42 @@
+# ==============================
+# PascalCalc Git Ignore
+# ==============================
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Backend coverage reports
+coverage.out
+coverage.html
+
+# Go binaries and test artifacts
+*.exe
+*.test
+*.prof
+*.pprof
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+*~
