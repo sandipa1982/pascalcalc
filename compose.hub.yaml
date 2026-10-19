@@ -1,0 +1,58 @@
+name: pascalcalc-hub
+
+services:
+  arithmetic:
+    image: sandipain/pascalcalc-arithmetic:1.0
+    platform: linux/arm64
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8081"
+      MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-4096}"
+      MAX_EXPRESSION_LENGTH: "${MAX_EXPRESSION_LENGTH:-1024}"
+      HTTP_READ_TIMEOUT: "${HTTP_READ_TIMEOUT:-5s}"
+      HTTP_WRITE_TIMEOUT: "${HTTP_WRITE_TIMEOUT:-10s}"
+      HTTP_IDLE_TIMEOUT: "${HTTP_IDLE_TIMEOUT:-60s}"
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+  math:
+    image: sandipain/pascalcalc-math:1.0
+    platform: linux/arm64
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8082"
+      MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-4096}"
+      MAX_EXPRESSION_LENGTH: "${MAX_EXPRESSION_LENGTH:-1024}"
+      HTTP_READ_TIMEOUT: "${HTTP_READ_TIMEOUT:-5s}"
+      HTTP_WRITE_TIMEOUT: "${HTTP_WRITE_TIMEOUT:-10s}"
+      HTTP_IDLE_TIMEOUT: "${HTTP_IDLE_TIMEOUT:-60s}"
+    expose:
+      - "8082"
+    restart: unless-stopped
+
+  expression:
+    image: sandipain/pascalcalc-expression:1.0
+    platform: linux/arm64
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8083"
+      MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-4096}"
+      MAX_EXPRESSION_LENGTH: "${MAX_EXPRESSION_LENGTH:-1024}"
+      HTTP_READ_TIMEOUT: "${HTTP_READ_TIMEOUT:-5s}"
+      HTTP_WRITE_TIMEOUT: "${HTTP_WRITE_TIMEOUT:-10s}"
+      HTTP_IDLE_TIMEOUT: "${HTTP_IDLE_TIMEOUT:-60s}"
+    expose:
+      - "8083"
+    restart: unless-stopped
+
+  web:
+    image: sandipain/pascalcalc-web:1.0-arm64
+    platform: linux/arm64
+    ports:
+      - "${PASCALCALC_PORT:-8088}:80"
+    depends_on:
+      - arithmetic
+      - math
+      - expression
+    restart: unless-stopped
