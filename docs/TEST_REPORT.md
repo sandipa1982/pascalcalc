@@ -1,10 +1,5 @@
 # PascalCalc — Unit Test and Coverage Report
 
-**Project:** PascalCalc  
-**Report date:** 19 October 2026  
-**Scope:** Go backend microservices, React/TypeScript frontend, REST APIs, and Docker deployment  
-**Evidence status:** Backend and frontend unit-test results and coverage are confirmed by developer-provided terminal output from 19 October 2026. Responsive browser behavior was confirmed by the developer after CSS fixes; screenshots have not yet been provided for inclusion. Docker deployment results were confirmed during the earlier developer walkthrough.
-
 ## 1. Testing objectives and scope
 
 The objective is to document automated unit testing, code coverage, reproducible execution steps, and remaining verification gaps for PascalCalc's submission deliverable **“Unit tests and coverage report.”**
