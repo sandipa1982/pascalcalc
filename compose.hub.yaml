@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: sandipain/pascalcalc-web:1.0-arm64
+    image: sandipain/pascalcalc-web:1.1-arm64
     platform: linux/arm64
     ports:
       - "${PASCALCALC_PORT:-8088}:80"
