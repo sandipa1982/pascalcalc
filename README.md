@@ -25,6 +25,7 @@ PascalCalc is a browser-based calculator built with **React, TypeScript, and Vit
 | Math | Go (`8082`) | Power, square root, percentage |
 | Expression | Go (`8083`) | Tokenize, parse, and evaluate expressions |
 | Deployment | Docker Compose | Runs gateway and three backend containers |
+ AI-Assisted Development | ChatGPT (OpenAI) | Requirements analysis, brainstorming, architecture design, code generation, unit-test assistance, code review, and documentation |
 
 **Docker request flow:** Browser → Nginx (`localhost:8088`) → appropriate Go microservice → JSON response.
 
@@ -39,7 +40,60 @@ For local development:
 - Go toolchain compatible with `backend/go.mod`.
 - Node.js compatible with the installed Vite version (Node.js 22+ recommended) and npm.
 
-## 4. Quick start — Docker (recommended)
+## 4. Quick start — Docker Hub images (ARM64)
+
+The prebuilt Docker Hub deployment starts PascalCalc **without compiling Go or React**. The published frontend image currently supports **linux/arm64 only** (for example, Apple Silicon Macs). The three backend images support both `linux/amd64` and `linux/arm64`. On an AMD64 machine, use the [build-from-source option](#5-build-from-source-with-docker) until an AMD64 frontend image is published.
+
+**Prerequisites:** Docker with Compose v2 and an ARM64 Docker environment.
+
+```bash
+git clone https://github.com/sandipa1982/pascalcalc.git
+cd pascalcalc
+docker compose -f compose.hub.yaml pull
+docker compose -f compose.hub.yaml up -d
+docker compose -f compose.hub.yaml ps
+```
+
+Open **http://localhost:8088**. Verify the gateway:
+
+```bash
+curl http://localhost:8088/health
+# {"status":"ok","component":"gateway"}
+```
+
+To run alongside another PascalCalc deployment using port 8088, use port 8089 instead:
+
+```bash
+PASCALCALC_PORT=8089 docker compose -f compose.hub.yaml up -d
+curl http://localhost:8089/health
+```
+
+**Published Docker Hub images:**
+
+| Component | Image | Published platforms |
+| --- | --- | --- |
+| Arithmetic | `sandipain/pascalcalc-arithmetic:1.0` | AMD64, ARM64 |
+| Math | `sandipain/pascalcalc-math:1.0` | AMD64, ARM64 |
+| Expression | `sandipain/pascalcalc-expression:1.0` | AMD64, ARM64 |
+| Frontend + Nginx | `sandipain/pascalcalc-web:1.0-arm64` | ARM64 |
+
+The published frontend image includes the Nginx gateway configuration; the Compose network uses the service names `arithmetic`, `math`, and `expression`. Backend ports remain internal.
+
+Useful commands:
+
+```bash
+docker compose -f compose.hub.yaml logs -f
+docker compose -f compose.hub.yaml ps
+docker compose -f compose.hub.yaml down
+```
+
+**Verification on 19 October 2026:** Four published-image containers were running, the gateway returned `{"status":"ok","component":"gateway"}` on port 8089, and browser calculations worked. Service-specific `/api/v1/math/health` and `/api/v1/expressions/health` returned 404; those URLs are not the documented calculation endpoints. Use the POST examples below to test the calculation APIs.
+
+> **Repository requirement:** Commit `compose.hub.yaml` alongside this README; it is needed for the Docker Hub commands above.
+
+## 5. Build from source with Docker
+
+This option builds all four images locally and can be used on AMD64 or ARM64 hosts.
 
 From the repository root:
 
@@ -65,7 +119,7 @@ PASCALCALC_PORT=8090 docker compose up --build -d
 
 The Go services communicate over the internal Compose network and are not individually published to the host. See [Docker setup](DOCKER_SETUP.md).
 
-## 5. Local development
+## 6. Local development
 
 ### Option A — Combined Go API and Vite
 
@@ -102,7 +156,7 @@ These are **three separate terminal commands**, not a sequential single-terminal
 
 Copy `.env.example` to `.env` if you need to customize settings. Do not commit secrets or local-only environment values.
 
-## 6. REST API and examples
+## 7. REST API and examples
 
 The Docker gateway base URL is **http://localhost:8088**. Calculation routes accept `POST` with JSON. Successful arithmetic/math requests return `{"result":number}`; expression evaluation returns `{"expression":"...","result":number}`.
 
@@ -153,24 +207,73 @@ The API returns HTTP `400` with a JSON `error` field for invalid calculation inp
 
 For all routes, required fields, validation rules, request/response payloads, and error cases, see [API Documentation](docs/API_DOCUMENTATION.md).
 
-## 7. Configuration
+## 8. Configuration
 
-Key settings defined by the Go configuration, `.env.example`, and `compose.yaml`:
+PascalCalc supports three execution environments:
+
+1. **Docker Hub deployment:** Runs prebuilt images using `compose.hub.yaml`.
+2. **Docker build from source:** Builds the application locally using `compose.yaml`.
+3. **Local development:** Runs Go services and the React/Vite frontend directly.
+
+Settings are supplied through environment variables, Docker Compose files, `.env.example`, and application defaults.
+
+### 8.1 Configuration variables
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PASCALCALC_PORT` | `8088` | Host port for Docker Nginx gateway |
+| `PASCALCALC_PORT` | `8088` | Host port for Nginx in both Docker Compose deployments |
+| `SERVER_HOST` | `0.0.0.0` in Docker | Go HTTP listener address |
 | `SERVER_PORT` | `8080` combined; `8081`/`8082`/`8083` in Compose | Go HTTP listener port |
 | `MAX_REQUEST_BYTES` | `4096` | Maximum JSON request body size |
-| `MAX_EXPRESSION_LENGTH` | `1024` | Backend expression length limit, in bytes |
+| `MAX_EXPRESSION_LENGTH` | `1024` | Backend expression limit in UTF-8 bytes |
+| `HTTP_READ_TIMEOUT` | `5s` | Backend HTTP read timeout |
+| `HTTP_WRITE_TIMEOUT` | `10s` | Backend HTTP write timeout |
+| `HTTP_IDLE_TIMEOUT` | `60s` | Backend HTTP idle timeout |
 | `BACKEND_API_URL` | `http://localhost:8080` | Vite development proxy target |
 | `FRONTEND_PORT` | `5173` | Vite development server port |
-| `VITE_API_BASE_URL` | `/api` | Browser API path prefix |
+| `VITE_API_BASE_URL` | `/api` | Frontend API base path (build-time setting) |
 | `VITE_API_TIMEOUT_MS` | `10000` | Frontend API timeout setting |
 
-**Important:** The Classic UI limit of 256 characters and backend limit of 1024 bytes are different. The backend's 1024-byte default is present in the uploaded Go configuration, `.env.example`, and Compose settings. Changing the backend default requires a coordinated implementation, test, configuration, and documentation update.
+### 8.2 Docker Hub configuration
 
-## 8. Testing and code coverage
+The published Docker images use runtime environment variables supplied by `compose.hub.yaml`. For example:
+
+```bash
+PASCALCALC_PORT=8089 MAX_REQUEST_BYTES=8192 \
+  docker compose -f compose.hub.yaml up -d
+```
+
+Open `http://localhost:8089` to use the application.
+
+The Go services receive their configuration at container startup. The React frontend is already compiled into the published image; changing Vite build-time settings requires rebuilding and republishing the frontend image.
+
+### 8.3 Docker build-from-source configuration
+
+Build and start all services locally:
+
+```bash
+docker compose up --build -d
+```
+
+Override the published gateway port:
+
+```bash
+PASCALCALC_PORT=8090 docker compose up --build -d
+```
+
+### 8.4 Local development configuration
+
+The Vite development server proxies `/api` requests to `BACKEND_API_URL` (default `http://localhost:8080`). Configure local values using the appropriate environment file or shell variables. See [Local development](#6-local-development).
+
+### 8.5 Configuration considerations
+
+- Compose-supplied backend environment variables take precedence over backend defaults.
+- Backend services communicate using their Compose service names over the internal Docker network.
+- Only the Nginx gateway is published to the host by default.
+- Classic Mode limits expression input to 256 JavaScript string characters; the Expression Service independently defaults to 1024 UTF-8 bytes.
+- The published frontend image currently supports ARM64; backend images support AMD64 and ARM64.
+
+## 9. Testing and code coverage
 
 ### Go backend
 
@@ -207,7 +310,7 @@ The repository declares `@vitest/coverage-v8` as a frontend development dependen
 
 These values are from the developer's local command output, not from tests rerun during README preparation. Regenerate coverage after any code changes.
 
-## 9. Key design decisions and trade-offs
+## 10. Key design decisions and trade-offs
 
 1. **Three services by capability:** Arithmetic, Math, and Expression are independently deployable and reusable across both UI modes. This adds infrastructure complexity compared with a monolith but demonstrates clear service boundaries.
 2. **One Go module with separate entry points:** Shared interfaces and code reduce duplication, while standalone binaries permit independent container deployment. Shared-module changes may still affect multiple services.
@@ -216,9 +319,13 @@ These values are from the developer's local command output, not from tests rerun
 5. **Parser-based expression evaluation:** Tokenization and parsing support precedence, parentheses, unary operators, and functions without evaluating arbitrary source code.
 6. **Layered validation:** UI input checks improve usability, while Go handlers and calculation services independently validate requests and numeric operations.
 7. **Stateless JSON APIs:** No database is required for calculator operations. Go `float64` results have normal floating-point limitations; this is not an arbitrary-precision decimal engine.
-8. **Testing and documentation first:** Unit tests, coverage, explicit API contracts, and phase-wise AI prompts support review and reproducibility.
+8. **Testing and documentation first:** Unit tests, coverage, explicit API contracts, and phase-wise AI prompts support 
+review and reproducibility.
+9. **Numeric input precision and 15-digit limit:** PascalCalc adopts a maximum of 15 digits for numeric operands as a product-level constraint. This conservative limit is intended to reduce precision-related surprises when using Go's float64 arithmetic and keep calculator inputs manageable. It does not guarantee exact decimal representation or arithmetic. Arbitrary-precision decimal calculations are outside the current scope.
 
-## 10. Repository structure
+10. **Expression-length limits and resource protection:** Classic Mode limits expression input to 256 JavaScript string characters to maintain usability and prevent excessively long expressions. The backend Expression Service independently applies a configurable limit of 1024 UTF-8 bytes by default to bound request processing. These separate validation layers provide defense in depth, with the trade-off that longer expressions may be rejected even when mathematically valid.
+
+## 11. Repository structure
 
 ```text
 calculator-app/
@@ -241,12 +348,13 @@ calculator-app/
 │   ├── FRONTEND_BLUEPRINT.md
 │   └── FRONTEND_DESIGN.md
 ├── compose.yaml
+├── compose.hub.yaml           # Published-image deployment (ARM64 frontend)
 ├── .env.example
 ├── DOCKER_SETUP.md
 └── README.md
 ```
 
-## 11. Design documents and AI prompts — phase-wise
+## 12. Design documents and AI prompts — phase-wise
 
 The documentation follows the project's input → design → implementation progression. Links below reflect the **actual lowercase `docs/` directory and nested `docs/prompts/` paths in the uploaded project**, not VS Code-local URLs.
 
@@ -259,7 +367,7 @@ The documentation follows the project's input → design → implementation prog
 | **5. API Documentation** | [API Documentation](docs/API_DOCUMENTATION.md) | Record implemented routes, request/response JSON, errors, and examples |
 | **6. Frontend Design** | [Frontend Blueprint](docs/FRONTEND_BLUEPRINT.md) → [Frontend Design](docs/FRONTEND_DESIGN.md) | Define UI modes, components, and API integration |
 | **7. Frontend Implementation** | [Frontend Coding Prompts](docs/prompts/Prompts-Coding-frontend/) | Project foundation, API configuration/client, calculators, app composition, and styles |
-| **8. Deployment and Verification** | [Docker Setup](DOCKER_SETUP.md) and [Testing instructions](#8-testing-and-code-coverage) | Deploy the services, verify routes, run tests, and reproduce coverage |
+| **8. Deployment and Verification** | [Docker Setup](DOCKER_SETUP.md) and [Testing instructions](#9-testing-and-code-coverage) | Deploy the services, verify routes, run tests, and reproduce coverage |
 
 ### Backend coding prompt sequence
 
@@ -282,17 +390,8 @@ The documentation follows the project's input → design → implementation prog
 
 The prompt files document AI-assisted work and may include reconstructed prompts. Their presence does not, by itself, prove that a specific prompt was executed or that generated output was independently validated. The source code and tests are the implementation evidence.
 
-## 12. Submission verification checklist
 
-- [ ] `docker compose up --build -d` completes successfully.
-- [ ] `http://localhost:8088` loads both calculator modes.
-- [ ] Gateway `/health` and sample Arithmetic, Math, and Expression requests succeed.
-- [ ] `go test ./... -count=1 -coverprofile=coverage.out` passes.
-- [ ] `npm run test -- --run --coverage` passes.
-- [ ] `npm run build` completes successfully.
-- [ ] All relative documentation links resolve in the repository.
-- [ ] Generated artifacts, local secrets, and unnecessary dependencies are excluded from Git.
-- [ ] Final README matches the committed source, configuration, and documentation.
+
 
 ---
 
